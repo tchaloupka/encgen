@@ -104,7 +104,7 @@ void writeCharMapC2U(ref IndentWriter wr, ref Character[] chars)
     wr.write("\"");
     foreach(int i, ch; chars)
     {
-        writef("\\u%04x", ch.u);
+        writef("\\u%04X", ch.u);
         if(i != 0 && (i + 1) % 8 == 0)
         {
             if(i + 1 != chars.length)
