@@ -140,13 +140,14 @@ void writeCharMapU2C(ref IndentWriter wr, ref Character[] chars)
     foreach(i, ch; bst)
     {
         writef("tuple('\\u%04X','\\x%02X')", ch.u, ch.s);
-        if ((i+1) % 3 == 0)
+        if ((i+1) % 3 == 0) // end of line
         {
-            if (i + 1 < bst.length)
+            if (i + 1 < bst.length) // not last yet
             {
                 writeln(",");
                 wr.write();
             }
+            else writeln();
         }
         else if (i + 1 == bst.length) writeln();
         else if (i + 1 < bst.length) write(", ");
@@ -234,7 +235,7 @@ void main(string[] args)
     writeln();
     wr.writeln("bool canEncode(dchar c)");
     wr.writeln("{")++;
-    wr.writefln("if (c < %#02X) return true;", startsWith);
+    wr.writefln("if (c < 0x%02X) return true;", startsWith);
     wr.writeln("if (c >= 0xFFFD) return false;");
     writeln();
     wr.writeln("auto idx = 0;");
@@ -253,8 +254,8 @@ void main(string[] args)
     wr.writeln("{")++;
     if (hasUndefined)
     {
-        wr.writefln("if (c < %#02X) return true", startsWith);
-        wr.writefln("return charMap[c-%#02X] != 0xFFFD;", startsWith)--;
+        wr.writefln("if (c < 0x%02X) return true;", startsWith);
+        wr.writefln("return charMap[c-0x%02X] != 0xFFFD;", startsWith)--;
     }
     else
         wr.writeln("return true;")--;
@@ -276,7 +277,7 @@ void main(string[] args)
     writeln();
     wr.writeln("void encodeViaWrite()(dchar c)");
     wr.writeln("{")++;
-    wr.writefln("if (c < %#02X) {}", startsWith); //return the same
+    wr.writefln("if (c < 0x%02X) {}", startsWith); //return the same
     wr.writeln("else if (c >= 0xFFFD) { c = '?'; }"); //cant encode
     wr.writeln("else");
     wr.writeln("{")++;
@@ -307,7 +308,7 @@ void main(string[] args)
     wr.writeln("dchar decodeViaRead()()");
     wr.writeln("{")++;
     wr.writefln("%sChar c = read();", encTypeName);
-    wr.writefln("return (c >= %#02X) ? charMap[c-%#02X] : c;", startsWith, startsWith)--;
+    wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
     wr.writeln("}");
 
     //safeDecodeViaRead
@@ -317,11 +318,11 @@ void main(string[] args)
     wr.writefln("%sChar c = read();", encTypeName);
     if (hasUndefined)
     {
-        wr.writefln("dchar d = (c >= %#02X) ? charMap[c-%#02X] : c;", startsWith, startsWith);
+        wr.writefln("dchar d = (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith);
         wr.writeln("return d == 0xFFFD ? INVALID_SEQUENCE : d;")--;
     }
     else
-        wr.writefln("return (c >= %#02X) ? charMap[c-%#02X] : c;", startsWith, startsWith)--;
+        wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
     wr.writeln("}");
 
     //decodeReverseViaRead
@@ -329,7 +330,7 @@ void main(string[] args)
     wr.writeln("dchar decodeReverseViaRead()()");
     wr.writeln("{")++;
     wr.writefln("%sChar c = read();", encTypeName);
-    wr.writefln("return (c >= %#02X) ? charMap[c-%#02X] : c;", startsWith, startsWith)--;
+    wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
     wr.writeln("}");
 
     //replacementSequence
