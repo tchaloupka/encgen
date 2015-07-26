@@ -1,0 +1,24 @@
+language: d
+
+d:
+  - dmd-2.068.0-b2
+  - dmd-2.067.1
+
+install:
+  - wget -c ftp://ftp.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1250.TXT
+
+script:
+  - dub test --compiler=${DC} -- CP1250.TXT
+
+branches:
+  only:
+    - master
+
+notifications:
+  email: true
+
+sudo: false
+
+matrix:
+  exclude:
+    
