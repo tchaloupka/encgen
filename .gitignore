@@ -1,0 +1,10 @@
+.dub
+*.userprefs
+docs.json
+dub.selections.json
+__dummy.html
+*.o
+*.obj
+*.txt
+*.TXT
+

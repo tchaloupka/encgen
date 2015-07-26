@@ -1,0 +1,8 @@
+{
+	"name": "encgen",
+	"description": "A minimal D application.",
+	"copyright": "Copyright © 2015, tcha",
+	"authors": ["Tomáš Chaloupka"],
+	"dependencies": {
+	}
+}
