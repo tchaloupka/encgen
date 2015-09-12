@@ -100,7 +100,7 @@ void writeCharMapC2U(ref IndentWriter wr, ref Character[] chars)
     chars.sort!((a,b) => a.s < b.s);
 
     writeln();
-    wr.writeln("immutable wstring charMap =")++;
+    wr.writeln("private immutable wstring charMap =")++;
     wr.write("\"");
     foreach(int i, ch; chars)
     {
@@ -134,7 +134,7 @@ void writeCharMapU2C(ref IndentWriter wr, ref Character[] chars)
     assert(bst.length == valid.length);
 
     writeln();
-    wr.writeln("immutable Tuple!(wchar, char)[] bstMap = [")++;
+    wr.writeln("private immutable Tuple!(wchar, char)[] bstMap = [")++;
     wr.write();
 
     foreach(i, ch; bst)
@@ -189,8 +189,12 @@ void main(string[] args)
         chars.put(Character(s, u));
     }
 
-    auto res = chars.data.find!(a => cast(uint)a.s != a.u).array; // sorted by char value
+	auto res = chars.data.retro.find!(a => cast(uint)a.s != a.u).array; // sorted by char value
+	auto endsWith = res[0].s;
+    res = chars.data.find!(a => cast(uint)a.s != a.u).array; // sorted by char value
     auto startsWith = res[0].s;
+	res = chars.data[startsWith..$-0xff+endsWith];
+
 
     // debug writeCharRangesInfo(chars.data);
 
@@ -202,7 +206,7 @@ void main(string[] args)
     wr.writefln("//          %s", encName);
     wr.writeln("//=============================================================================");
     writeln();
-    wr.writefln("/// Defines a %s-encoded character.", encName);
+	wr.writefln("/// Defines a %s-encoded character.", encTypeName);
     wr.writefln("enum %sChar : ubyte { init }", encTypeName);
     writeln();
     wr.writeln("/**");
@@ -225,123 +229,18 @@ void main(string[] args)
     wr.writefln("return \"%s\";", encName.toLower)--;
     wr.writeln("}");
 
+	wr.writeln();
+	wr.writefln("private dchar m_charMapStart = 0x%02x;", startsWith);
+	wr.writefln("private dchar m_charMapEnd = 0x%02x;", endsWith);
+
     //char map c2u
     writeCharMapC2U(wr, res);
 
     //char map u2c
     writeCharMapU2C(wr, res);
 
-    //canEncode
     writeln();
-    wr.writeln("bool canEncode(dchar c)");
-    wr.writeln("{")++;
-    wr.writefln("if (c < 0x%02X) return true;", startsWith);
-    wr.writeln("if (c >= 0xFFFD) return false;");
-    writeln();
-    wr.writeln("auto idx = 0;");
-    wr.writeln("while (idx < bstMap.length)");
-    wr.writeln("{")++;
-    wr.writeln("if (bstMap[idx][0] == c) return true;");
-    wr.writeln("idx = bstMap[idx][0] > c ? 2 * idx + 1 : 2 * idx + 2; // next BST index")--;
-    wr.writeln("}");
-    writeln();
-    wr.writeln("return false;")--;
-    wr.writeln("}");
-
-    //isValidCodeUnit
-    writeln();
-    wr.writefln("bool isValidCodeUnit(%sChar c)", encTypeName);
-    wr.writeln("{")++;
-    if (hasUndefined)
-    {
-        wr.writefln("if (c < 0x%02X) return true;", startsWith);
-        wr.writefln("return charMap[c-0x%02X] != 0xFFFD;", startsWith)--;
-    }
-    else
-        wr.writeln("return true;")--;
-    wr.writeln("}");
-
-    //encodedLength
-    writeln();
-    wr.writeln("size_t encodedLength(dchar c)");
-    wr.writeln("in");
-    wr.writeln("{")++;
-    wr.writeln("assert(canEncode(c));")--;
-    wr.writeln("}");
-    wr.writeln("body");
-    wr.writeln("{")++;
-    wr.writeln("return 1;")--;
-    wr.writeln("}");
-
-    //encodeViaWrite
-    writeln();
-    wr.writeln("void encodeViaWrite()(dchar c)");
-    wr.writeln("{")++;
-    wr.writefln("if (c < 0x%02X) {}", startsWith); //return the same
-    wr.writeln("else if (c >= 0xFFFD) { c = '?'; }"); //cant encode
-    wr.writeln("else");
-    wr.writeln("{")++;
-    wr.writeln("auto idx = 0;");
-    wr.writeln("while (idx < bstMap.length)");
-    wr.writeln("{")++;
-    wr.writeln("if (bstMap[idx][0] == c)");
-    wr.writeln("{")++;
-    wr.writefln("write(cast(%sChar)bstMap[idx][1]);", encTypeName);
-    wr.writeln("return;")--;
-    wr.writeln("}");
-    wr.writeln("idx = bstMap[idx][0] > c ? 2 * idx + 1 : 2 * idx + 2; // next BST index")--;
-    wr.writeln("}");
-    wr.writeln("c = '?';")--;
-    wr.writeln("}");
-    wr.writefln("write(cast(%sChar)c);", encTypeName)--;
-    wr.writefln("}");
-
-    //skipViaRead
-    writeln();
-    wr.writeln("void skipViaRead()()");
-    wr.writeln("{")++;
-    wr.writeln("read();")--;
-    wr.writeln("}");
-
-    //decodeViaRead
-    writeln();
-    wr.writeln("dchar decodeViaRead()()");
-    wr.writeln("{")++;
-    wr.writefln("%sChar c = read();", encTypeName);
-    wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
-    wr.writeln("}");
-
-    //safeDecodeViaRead
-    writeln();
-    wr.writeln("dchar safeDecodeViaRead()()");
-    wr.writeln("{")++;
-    wr.writefln("%sChar c = read();", encTypeName);
-    if (hasUndefined)
-    {
-        wr.writefln("dchar d = (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith);
-        wr.writeln("return d == 0xFFFD ? INVALID_SEQUENCE : d;")--;
-    }
-    else
-        wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
-    wr.writeln("}");
-
-    //decodeReverseViaRead
-    writeln();
-    wr.writeln("dchar decodeReverseViaRead()()");
-    wr.writeln("{")++;
-    wr.writefln("%sChar c = read();", encTypeName);
-    wr.writefln("return (c >= 0x%02X) ? charMap[c-0x%02X] : c;", startsWith, startsWith)--;
-    wr.writeln("}");
-
-    //replacementSequence
-    writeln();
-    wr.writeln("@property EString replacementSequence()");
-    wr.writeln("{")++;
-    wr.writeln(`return cast(EString)("?");`)--;
-    wr.writeln("}");
-
-    writeln();
-    wr.writeln("mixin EncoderFunctions;")--;
+	wr.writeln("mixin GenericEncoder!();")--;
     wr.writeln("}");
 }
 
