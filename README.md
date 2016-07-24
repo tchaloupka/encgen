@@ -1,7 +1,7 @@
 # encgen
 Encoding generator for D
 
-[![Build Status](https://travis-ci.org/chalucha/encgen.svg?branch=master)](https://travis-ci.org/chalucha/encgen)
+[![Build Status](https://travis-ci.org/tchaloupka/encgen.svg?branch=master)](https://travis-ci.org/tchaloupka/encgen)
 
 It can be used to help generate encodings for [Phobos](https://github.com/D-Programming-Language/phobos/blob/master/std/encoding.d) library.
 
